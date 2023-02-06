@@ -142,6 +142,7 @@ new aws_cloudfront.Distribution(stack, 'cdn', {
     origin: new aws_cloudfront_origins.LoadBalancerV2Origin(loadBalancer, {
       protocolPolicy: aws_cloudfront.OriginProtocolPolicy.HTTP_ONLY,
     }),
+    cachePolicy: aws_cloudfront.CachePolicy.CACHING_DISABLED,
   },
 });
 
