@@ -137,13 +137,7 @@ const lambdaFunction = new aws_lambda_nodejs.NodejsFunction(stack, `function`, {
   insightsVersion: aws_lambda.LambdaInsightsVersion.VERSION_1_0_143_0,
   timeout: Duration.seconds(30),
   vpc: defaultVpc,
-  securityGroups: [
-    aws_ec2.SecurityGroup.fromLookupById(
-      stack,
-      'eb-elb-security-group',
-      `sg-0e122c552614f6a4c`,
-    ),
-  ],
+  securityGroups: [securityGroup],
   allowPublicSubnet: true,
 });
 
