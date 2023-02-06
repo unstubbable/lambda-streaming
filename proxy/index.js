@@ -1,0 +1,85 @@
+import crypto from 'crypto';
+import http from 'http';
+import {TextEncoder} from 'util';
+import {
+  InvocationType,
+  InvokeCommand,
+  LambdaClient,
+} from '@aws-sdk/client-lambda';
+
+const responseTimeout = 30000;
+const origin = process.env.ORIGIN;
+const port = process.env.PORT || 3000;
+const lambdaClient = new LambdaClient({region: process.env.AWS_REGION});
+
+/** @type {Map<string, http.ServerResponse>} */
+const responses = new Map();
+
+/** @type {Map<string, NodeJS.Timeout>} */
+const responseTimeoutIds = new Map();
+
+const server = http.createServer((req, res) => {
+  if (req.method === `GET`) {
+    handleIncomingRequest(res);
+  } else if (req.method === `POST`) {
+    handleCallbackRequest(req, res);
+  } else {
+    res.writeHead(405);
+    res.end();
+  }
+});
+
+server.listen(port, () =>
+  console.log(`Started server at port ${port} (${process.env.ORIGIN})`),
+);
+
+/**
+ * @param {http.ServerResponse} res
+ */
+async function handleIncomingRequest(res) {
+  const requestId = crypto.randomBytes(16).toString(`hex`);
+
+  responses.set(requestId, res);
+
+  responseTimeoutIds.set(
+    requestId,
+    setTimeout(() => {
+      responses.delete(requestId);
+      responseTimeoutIds.delete(requestId);
+      res.writeHead(500).end();
+    }, responseTimeout),
+  );
+
+  await lambdaClient.send(
+    new InvokeCommand({
+      FunctionName: `streaming-test`,
+      InvocationType: InvocationType.Event,
+      Payload: new TextEncoder().encode(JSON.stringify({origin, requestId})),
+    }),
+  );
+}
+
+/**
+ * @param {http.IncomingMessage} req
+ * @param {http.ServerResponse} res
+ */
+async function handleCallbackRequest(req, res) {
+  const requestId = req.headers[`x-request-id`];
+
+  if (typeof requestId === `string`) {
+    const originalResponse = responses.get(requestId);
+
+    responses.delete(requestId);
+    clearTimeout(responseTimeoutIds.get(requestId));
+    responseTimeoutIds.delete(requestId);
+
+    if (originalResponse) {
+      req.pipe(originalResponse);
+      req.on(`end`, () => res.writeHead(200).end());
+    } else {
+      res.writeHead(500).end();
+    }
+  } else {
+    res.writeHead(400).end();
+  }
+}
