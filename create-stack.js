@@ -45,7 +45,7 @@ const role = new aws_iam.Role(stack, 'ec2-role', {
 const userData = aws_ec2.UserData.forLinux();
 
 const proxyServerZip = new aws_s3_assets.Asset(stack, 'proxy-server-zip', {
-  path: `./proxy`,
+  path: `./src/proxy`,
 });
 
 proxyServerZip.grantRead(role);
@@ -56,7 +56,7 @@ const proxyServerZipFilename = userData.addS3DownloadCommand({
 });
 
 const configScript = new aws_s3_assets.Asset(stack, 'config-script', {
-  path: './proxy/configure_amz_linux.sh',
+  path: './src/proxy/configure_amz_linux.sh',
 });
 
 configScript.grantRead(role);
@@ -129,7 +129,7 @@ new aws_cloudfront.Distribution(stack, 'cdn', {
 const lambdaFunction = new aws_lambda_nodejs.NodejsFunction(stack, `function`, {
   functionName: `streaming-test`,
   runtime: aws_lambda.Runtime.NODEJS_18_X,
-  entry: `./handler/index.ts`,
+  entry: `./src/handler/index.ts`,
   bundling: {
     format: aws_lambda_nodejs.OutputFormat.ESM,
     minify: true,

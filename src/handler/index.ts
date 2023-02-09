@@ -1,4 +1,3 @@
-import type {Handler} from 'aws-lambda';
 import {z} from 'zod';
 
 const Event = z.object({origin: z.string(), requestId: z.string()});
@@ -19,8 +18,7 @@ const htmlLines = [
   `</html>`,
 ];
 
-export const handler: Handler = async (event) => {
-  console.log(event);
+export const handler = async (event: unknown) => {
   const {origin, requestId} = Event.parse(event);
 
   const stream = new ReadableStream({
