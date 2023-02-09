@@ -20,7 +20,7 @@ const responseTimeoutIds = new Map();
 
 const server = http.createServer((req, res) => {
   if (req.method === `GET`) {
-    handleIncomingRequest(res);
+    handleIncomingRequest(req, res);
   } else if (req.method === `POST`) {
     handleCallbackRequest(req, res);
   } else {
@@ -34,9 +34,10 @@ server.listen(port, () =>
 );
 
 /**
+ * @param {http.IncomingMessage} req
  * @param {http.ServerResponse} res
  */
-async function handleIncomingRequest(res) {
+async function handleIncomingRequest(req, res) {
   const requestId = crypto.randomBytes(16).toString(`hex`);
 
   responses.set(requestId, res);
@@ -54,7 +55,9 @@ async function handleIncomingRequest(res) {
     new InvokeCommand({
       FunctionName: `streaming-test`,
       InvocationType: InvocationType.Event,
-      Payload: new TextEncoder().encode(JSON.stringify({origin, requestId})),
+      Payload: new TextEncoder().encode(
+        JSON.stringify({origin, url: req.url, requestId}),
+      ),
     }),
   );
 }
@@ -74,7 +77,11 @@ async function handleCallbackRequest(req, res) {
     responseTimeoutIds.delete(requestId);
 
     if (originalResponse) {
-      req.pipe(originalResponse);
+      if (req.headers['content-length'] === '0') {
+        originalResponse.writeHead(404).end();
+      } else {
+        req.pipe(originalResponse);
+      }
       req.on(`end`, () => res.writeHead(200).end());
     } else {
       res.writeHead(500).end();

@@ -1,6 +1,10 @@
 import {z} from 'zod';
 
-const Event = z.object({origin: z.string(), requestId: z.string()});
+const Event = z.object({
+  origin: z.string(),
+  url: z.string(),
+  requestId: z.string(),
+});
 
 const htmlLines = [
   `<!doctype html>`,
@@ -19,7 +23,14 @@ const htmlLines = [
 ];
 
 export const handler = async (event: unknown) => {
-  const {origin, requestId} = Event.parse(event);
+  const {origin, url, requestId} = Event.parse(event);
+
+  if (url.includes(`.`)) {
+    return void fetch(origin, {
+      method: `POST`,
+      headers: {'x-request-id': requestId},
+    });
+  }
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -32,7 +43,7 @@ export const handler = async (event: unknown) => {
     },
   }).pipeThrough(new TextEncoderStream());
 
-  await fetch(origin, {
+  return void fetch(origin, {
     method: `POST`,
     headers: {
       'content-type': 'text/html; charset=UTF-8',
