@@ -84,7 +84,11 @@ async function handleCallbackRequest(req, res) {
           ? statusCodeHeader[0]
           : statusCodeHeader) ?? '200';
 
-      originalResponse.writeHead(parseInt(statusCode, 10));
+      originalResponse.writeHead(
+        parseInt(statusCode, 10),
+        filterPassthroughHeaders(req.headers),
+      );
+
       req.pipe(originalResponse);
       req.on(`end`, () => res.writeHead(200).end());
     } else {
@@ -93,4 +97,29 @@ async function handleCallbackRequest(req, res) {
   } else {
     res.writeHead(400).end();
   }
+}
+
+const passthroughHeaderNames = [
+  'content-type',
+  'content-length',
+  'transfer-encoding',
+];
+
+/**
+ * @param {http.IncomingHttpHeaders} requestHeaders
+ * @return {http.OutgoingHttpHeaders}
+ */
+function filterPassthroughHeaders(requestHeaders) {
+  /** @type {http.OutgoingHttpHeaders} */
+  const headers = {};
+
+  for (const headerName of passthroughHeaderNames) {
+    const headerValue = requestHeaders[headerName];
+
+    if (headerValue) {
+      headers[headerName] = headerValue;
+    }
+  }
+
+  return headers;
 }
