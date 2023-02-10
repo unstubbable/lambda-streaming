@@ -1,7 +1,7 @@
 {
   "name": "lambda-streaming",
   "version": "1.0.0",
-  "description": "Testing response streaming in AWS Lambda",
+  "description": "Testing response streaming with AWS Lambda",
   "license": "MIT",
   "author": "Hendrik Liebau <mail@hendrik-liebau.de>",
   "type": "module",
