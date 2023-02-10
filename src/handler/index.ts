@@ -28,7 +28,7 @@ export const handler = async (event: unknown) => {
   if (url.includes(`.`)) {
     return void fetch(origin, {
       method: `POST`,
-      headers: {'x-request-id': requestId},
+      headers: {'x-request-id': requestId, 'x-status-code': '404'},
     });
   }
 
@@ -48,6 +48,7 @@ export const handler = async (event: unknown) => {
     headers: {
       'content-type': 'text/html; charset=UTF-8',
       'x-request-id': requestId,
+      'x-status-code': '200',
     },
     body: stream,
   });

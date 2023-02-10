@@ -77,11 +77,15 @@ async function handleCallbackRequest(req, res) {
     responseTimeoutIds.delete(requestId);
 
     if (originalResponse) {
-      if (req.headers['content-length'] === '0') {
-        originalResponse.writeHead(404).end();
-      } else {
-        req.pipe(originalResponse);
-      }
+      const statusCodeHeader = req.headers['x-status-code'];
+
+      const statusCode =
+        (Array.isArray(statusCodeHeader)
+          ? statusCodeHeader[0]
+          : statusCodeHeader) ?? '200';
+
+      originalResponse.writeHead(parseInt(statusCode, 10));
+      req.pipe(originalResponse);
       req.on(`end`, () => res.writeHead(200).end());
     } else {
       res.writeHead(500).end();
