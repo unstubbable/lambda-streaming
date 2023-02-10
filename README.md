@@ -28,11 +28,15 @@ Vercel accomplished this nevertheless, as
 
 This repo contains a very basic proof-of-concept that's implementing my
 [guess](https://twitter.com/unstubbable/status/1620771363580694534) of how this
-could be done. It's basically a Node.js proxy server that:
+could be done. It's basically a
+[Node.js proxy server](https://github.com/unstubbable/lambda-streaming/blob/main/src/proxy/index.js)
+that:
 
 - accepts the incoming GET requests from the client,
-- invokes the SSSR lambda asynchronously to do the heavy lifting, passing a
-  generated request ID along with the payload,
+- invokes the
+  [SSSR lambda](https://github.com/unstubbable/lambda-streaming/blob/main/src/handler/index.ts)
+  asynchronously to do the heavy lifting, passing a generated request ID along
+  with the payload,
 - stores the response object in a map using the request ID as key
 - accepts callback POST requests by the SSSR lambda to pipe the stream body
   directly into the original response back to the client, using the request ID
@@ -41,7 +45,8 @@ could be done. It's basically a Node.js proxy server that:
 To sketch out that this PoC might also work at scale the Node.js proxy server is
 deployed into EC2 instances together with an Auto Scaling Group, an Application
 Load Balancer, and a CloudFront CDN in front of it, using the
-[aws-cdk](https://aws.amazon.com/cdk/) to describe the infrastucture in code.
+[aws-cdk](https://aws.amazon.com/cdk/) to describe the
+[infrastucture in code](https://github.com/unstubbable/lambda-streaming/blob/main/create-stack.js).
 
 _Disclaimers:_
 
