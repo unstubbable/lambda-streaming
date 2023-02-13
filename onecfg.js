@@ -2,6 +2,7 @@ import {
   editorconfig,
   eslint,
   git,
+  ignore,
   node,
   npm,
   prettier,
@@ -19,15 +20,14 @@ writeFiles(
   ...npm(),
   ...prettier(),
   ...vscode({includeFilesInExplorer: false}),
+  ...ignore(`cdk.out`, `cdk.context.json`, `dist`),
 
   mergeContent(npm.packageFile, {
     scripts: {
       predeploy: `cdk bootstrap --app "node create-stack.js"`,
       deploy: `cdk deploy --app "node create-stack.js" --all --no-asset-metadata`,
-      start: 'nodemon dist/dev-server.cjs',
-      watch: 'node esbuild.js',
+      start: `nodemon dist/dev-server.cjs`,
+      watch: `node esbuild.js`,
     },
   }),
-
-  mergeContent(git.ignoreFile, ['cdk.out', 'cdk.context.json', 'dist']),
 );

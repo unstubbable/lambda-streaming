@@ -2,6 +2,9 @@
 
 import {
   App,
+  Duration,
+  RemovalPolicy,
+  Stack,
   aws_autoscaling,
   aws_cloudfront,
   aws_cloudfront_origins,
@@ -12,9 +15,6 @@ import {
   aws_lambda_nodejs,
   aws_logs,
   aws_s3_assets,
-  Duration,
-  RemovalPolicy,
-  Stack,
 } from 'aws-cdk-lib';
 
 const app = new App();
@@ -24,27 +24,27 @@ const stack = new Stack(app, `streaming-lambda-test`, {
   env: {account: process.env.CDK_DEFAULT_ACCOUNT, region: `us-east-1`},
 });
 
-const defaultVpc = aws_ec2.Vpc.fromLookup(stack, 'default-vpc', {
+const defaultVpc = aws_ec2.Vpc.fromLookup(stack, `default-vpc`, {
   isDefault: true,
 });
 
-const securityGroup = new aws_ec2.SecurityGroup(stack, 'security-group', {
+const securityGroup = new aws_ec2.SecurityGroup(stack, `security-group`, {
   vpc: defaultVpc,
 });
 
 securityGroup.addIngressRule(
   aws_ec2.Peer.anyIpv4(),
   aws_ec2.Port.tcp(80),
-  'Allow HTTP access from the Internet',
+  `Allow HTTP access from the Internet`,
 );
 
-const role = new aws_iam.Role(stack, 'ec2-role', {
-  assumedBy: new aws_iam.ServicePrincipal('ec2.amazonaws.com'),
+const role = new aws_iam.Role(stack, `ec2-role`, {
+  assumedBy: new aws_iam.ServicePrincipal(`ec2.amazonaws.com`),
 });
 
 const userData = aws_ec2.UserData.forLinux();
 
-const proxyServerZip = new aws_s3_assets.Asset(stack, 'proxy-server-zip', {
+const proxyServerZip = new aws_s3_assets.Asset(stack, `proxy-server-zip`, {
   path: `./src/proxy`,
 });
 
@@ -55,8 +55,8 @@ const proxyServerZipFilename = userData.addS3DownloadCommand({
   bucketKey: proxyServerZip.s3ObjectKey,
 });
 
-const configScript = new aws_s3_assets.Asset(stack, 'config-script', {
-  path: './src/proxy/configure_amz_linux.sh',
+const configScript = new aws_s3_assets.Asset(stack, `config-script`, {
+  path: `./src/proxy/configure_amz_linux.sh`,
 });
 
 configScript.grantRead(role);
@@ -73,7 +73,7 @@ userData.addExecuteFileCommand({
 
 const ec2LaunchTemplate = new aws_ec2.LaunchTemplate(
   stack,
-  'ec2-launch-template',
+  `ec2-launch-template`,
   {
     instanceType: aws_ec2.InstanceType.of(
       aws_ec2.InstanceClass.T2,
@@ -90,19 +90,19 @@ const ec2LaunchTemplate = new aws_ec2.LaunchTemplate(
 
 const loadBalancer = new aws_elasticloadbalancingv2.ApplicationLoadBalancer(
   stack,
-  'load-balancer',
+  `load-balancer`,
   {vpc: defaultVpc, securityGroup, internetFacing: true},
 );
 
 const autoScalingGroup = new aws_autoscaling.AutoScalingGroup(
   stack,
-  'autoscaling-group',
+  `autoscaling-group`,
   {
     vpc: defaultVpc,
     launchTemplate: ec2LaunchTemplate,
     minCapacity: 0,
     maxCapacity: 2,
-    autoScalingGroupName: 'streaming-lambda',
+    autoScalingGroupName: `streaming-lambda`,
   },
 );
 
@@ -117,7 +117,7 @@ loadBalancer.addListener(`http-listener`, {
   defaultTargetGroups: [targetGroup],
 });
 
-new aws_cloudfront.Distribution(stack, 'cdn', {
+new aws_cloudfront.Distribution(stack, `cdn`, {
   defaultBehavior: {
     origin: new aws_cloudfront_origins.LoadBalancerV2Origin(loadBalancer, {
       protocolPolicy: aws_cloudfront.OriginProtocolPolicy.HTTP_ONLY,
@@ -144,7 +144,7 @@ const lambdaFunction = new aws_lambda_nodejs.NodejsFunction(stack, `function`, {
 
 lambdaFunction.grantInvoke(role);
 
-new aws_logs.LogGroup(stack, 'function-log-group', {
+new aws_logs.LogGroup(stack, `function-log-group`, {
   logGroupName: `/aws/lambda/${lambdaFunction.functionName}`,
   removalPolicy: RemovalPolicy.DESTROY,
   retention: aws_logs.RetentionDays.ONE_WEEK,

@@ -77,12 +77,12 @@ async function handleCallbackRequest(req, res) {
     responseTimeoutIds.delete(requestId);
 
     if (originalResponse) {
-      const statusCodeHeader = req.headers['x-status-code'];
+      const statusCodeHeader = req.headers[`x-status-code`];
 
       const statusCode =
         (Array.isArray(statusCodeHeader)
           ? statusCodeHeader[0]
-          : statusCodeHeader) ?? '200';
+          : statusCodeHeader) ?? `200`;
 
       originalResponse.writeHead(
         parseInt(statusCode, 10),
@@ -100,9 +100,9 @@ async function handleCallbackRequest(req, res) {
 }
 
 const passthroughHeaderNames = [
-  'content-type',
-  'content-length',
-  'transfer-encoding',
+  `content-type`,
+  `content-length`,
+  `transfer-encoding`,
 ];
 
 /**

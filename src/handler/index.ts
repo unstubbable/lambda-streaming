@@ -26,14 +26,16 @@ const htmlLines = [
   `</html>`,
 ];
 
-export const handler = async (event: unknown) => {
+export const handler = async (event: unknown): Promise<void> => {
   const {origin, url, requestId} = Event.parse(event);
 
   if (url.includes(`.`)) {
-    return void fetch(origin, {
+    await fetch(origin, {
       method: `POST`,
-      headers: {'x-request-id': requestId, 'x-status-code': '404'},
+      headers: {'x-request-id': requestId, 'x-status-code': `404`},
     });
+
+    return;
   }
 
   const stream = new ReadableStream({
@@ -49,17 +51,17 @@ export const handler = async (event: unknown) => {
     },
   }).pipeThrough(new TextEncoderStream());
 
-  return void fetch(origin, {
+  await fetch(origin, {
     method: `POST`,
     headers: {
-      'content-type': 'text/html; charset=utf-8',
+      'content-type': `text/html; charset=utf-8`,
       'x-request-id': requestId,
-      'x-status-code': '200',
+      'x-status-code': `200`,
     },
     body: stream,
   });
 };
 
-function wait(milliseconds: number) {
+async function wait(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
