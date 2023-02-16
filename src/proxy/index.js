@@ -53,7 +53,7 @@ async function handleIncomingRequest(req, res) {
 
   await lambdaClient.send(
     new InvokeCommand({
-      FunctionName: `streaming-test`,
+      FunctionName: process.env.LAMBDA_FUNCTION_NAME,
       InvocationType: InvocationType.Event,
       Payload: new TextEncoder().encode(
         JSON.stringify({origin, url: req.url, requestId}),

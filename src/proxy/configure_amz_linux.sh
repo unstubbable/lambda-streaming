@@ -3,7 +3,14 @@
 if [[ "$1" != "" ]]; then
     PROXY_SERVER_ZIP="$1"
 else
-    echo "Please specify the location of proxy server you are trying to deploy."
+    echo "Please specify the location of the proxy server zip."
+    exit 1
+fi
+
+if [[ "$2" != "" ]]; then
+    LAMBDA_FUNCTION_NAME="$2"
+else
+    echo "Please specify the lambda function name."
     exit 1
 fi
 
@@ -32,6 +39,8 @@ systemctl enable nginx.service
 systemctl start nginx.service
 systemctl status nginx.service
 
+echo "Environment=\"LAMBDA_FUNCTION_NAME=$LAMBDA_FUNCTION_NAME\"" >> node_server.service
+cat node_server.service
 cp node_server.service /usr/lib/systemd/system/node_server.service
 systemctl daemon-reload
 systemctl enable node_server.service

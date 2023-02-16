@@ -38,9 +38,34 @@ securityGroup.addIngressRule(
   `Allow HTTP access from the Internet`,
 );
 
+const lambdaFunction = new aws_lambda_nodejs.NodejsFunction(stack, `function`, {
+  functionName: `streaming-test`,
+  runtime: aws_lambda.Runtime.NODEJS_18_X,
+  entry: `./src/handler/index.ts`,
+  bundling: {
+    format: aws_lambda_nodejs.OutputFormat.ESM,
+    minify: true,
+    sourceMap: true,
+  },
+  insightsVersion: aws_lambda.LambdaInsightsVersion.VERSION_1_0_143_0,
+  timeout: Duration.seconds(30),
+  vpc: defaultVpc,
+  securityGroups: [securityGroup],
+  allowPublicSubnet: true,
+  currentVersionOptions: {removalPolicy: RemovalPolicy.RETAIN},
+});
+
+new aws_logs.LogGroup(stack, `function-log-group`, {
+  logGroupName: `/aws/lambda/${lambdaFunction.functionName}`,
+  removalPolicy: RemovalPolicy.DESTROY,
+  retention: aws_logs.RetentionDays.ONE_WEEK,
+});
+
 const role = new aws_iam.Role(stack, `ec2-role`, {
   assumedBy: new aws_iam.ServicePrincipal(`ec2.amazonaws.com`),
 });
+
+lambdaFunction.grantInvoke(role);
 
 const userData = aws_ec2.UserData.forLinux();
 
@@ -68,7 +93,7 @@ const configScriptFilename = userData.addS3DownloadCommand({
 
 userData.addExecuteFileCommand({
   filePath: configScriptFilename,
-  arguments: proxyServerZipFilename,
+  arguments: `${proxyServerZipFilename} ${lambdaFunction.functionName}:${lambdaFunction.currentVersion.version}`,
 });
 
 const ec2LaunchTemplate = new aws_ec2.LaunchTemplate(
@@ -124,28 +149,4 @@ new aws_cloudfront.Distribution(stack, `cdn`, {
     }),
     cachePolicy: aws_cloudfront.CachePolicy.CACHING_DISABLED,
   },
-});
-
-const lambdaFunction = new aws_lambda_nodejs.NodejsFunction(stack, `function`, {
-  functionName: `streaming-test`,
-  runtime: aws_lambda.Runtime.NODEJS_18_X,
-  entry: `./src/handler/index.ts`,
-  bundling: {
-    format: aws_lambda_nodejs.OutputFormat.ESM,
-    minify: true,
-    sourceMap: true,
-  },
-  insightsVersion: aws_lambda.LambdaInsightsVersion.VERSION_1_0_143_0,
-  timeout: Duration.seconds(30),
-  vpc: defaultVpc,
-  securityGroups: [securityGroup],
-  allowPublicSubnet: true,
-});
-
-lambdaFunction.grantInvoke(role);
-
-new aws_logs.LogGroup(stack, `function-log-group`, {
-  logGroupName: `/aws/lambda/${lambdaFunction.functionName}`,
-  removalPolicy: RemovalPolicy.DESTROY,
-  retention: aws_logs.RetentionDays.ONE_WEEK,
 });
