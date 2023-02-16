@@ -125,7 +125,7 @@ const autoScalingGroup = new aws_autoscaling.AutoScalingGroup(
   {
     vpc: defaultVpc,
     launchTemplate: ec2LaunchTemplate,
-    minCapacity: 0,
+    minCapacity: 1,
     maxCapacity: 2,
     autoScalingGroupName: `streaming-lambda`,
   },
