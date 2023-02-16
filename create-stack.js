@@ -16,6 +16,7 @@ import {
   aws_logs,
   aws_s3_assets,
 } from 'aws-cdk-lib';
+import {KeyPair} from 'cdk-ec2-key-pair';
 
 const app = new App();
 
@@ -36,6 +37,12 @@ securityGroup.addIngressRule(
   aws_ec2.Peer.anyIpv4(),
   aws_ec2.Port.tcp(80),
   `Allow HTTP access from the Internet`,
+);
+
+securityGroup.addIngressRule(
+  aws_ec2.Peer.anyIpv4(),
+  aws_ec2.Port.tcp(22),
+  `Allow SSH Access`,
 );
 
 const lambdaFunction = new aws_lambda_nodejs.NodejsFunction(stack, `function`, {
@@ -64,6 +71,12 @@ new aws_logs.LogGroup(stack, `function-log-group`, {
 const role = new aws_iam.Role(stack, `ec2-role`, {
   assumedBy: new aws_iam.ServicePrincipal(`ec2.amazonaws.com`),
 });
+
+role.addManagedPolicy(
+  aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
+    `AmazonSSMManagedInstanceCore`,
+  ),
+);
 
 lambdaFunction.grantInvoke(role);
 
@@ -96,6 +109,13 @@ userData.addExecuteFileCommand({
   arguments: `${proxyServerZipFilename} ${lambdaFunction.functionName}:${lambdaFunction.currentVersion.version}`,
 });
 
+const key = new KeyPair(stack, `key-pair`, {
+  name: `streaming-node-server-ssh-key-pair`,
+  storePublicKey: true,
+});
+
+key.grantReadOnPublicKey(role);
+
 const ec2LaunchTemplate = new aws_ec2.LaunchTemplate(
   stack,
   `ec2-launch-template`,
@@ -110,6 +130,7 @@ const ec2LaunchTemplate = new aws_ec2.LaunchTemplate(
     securityGroup,
     userData,
     role,
+    keyName: key.keyPairName,
   },
 );
 
